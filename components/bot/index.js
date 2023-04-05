@@ -36,7 +36,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 var TelegramApi = require("node-telegram-bot-api");
 var axios = require("axios");
-var token = "6010251648:AAGMmNN6WO3uswC9nUyNIXUX6nmXjjytZEw";
+var config = require('./botConfig');
+var token = config.token;
 var bot = new TelegramApi(token, { polling: true });
 var now = Date.now();
 exports.initBot = function () {
@@ -88,12 +89,6 @@ exports.initBot = function () {
             return [2 /*return*/, bot.sendMessage(chatId, 'Я тебя не понял')];
         });
     }); });
-    setInterval(function () {
-        if (Date.now() > now + 600000) {
-            bot.sendMessage(1226355897, 'прошело 10 минут');
-            now = Date.now();
-        }
-    }, 1000);
 };
 exports.happyBirthday = function (chatId) {
     bot.sendMessage(chatId, 'happyBirthday');

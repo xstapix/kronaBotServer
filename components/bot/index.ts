@@ -1,8 +1,10 @@
 const TelegramApi = require("node-telegram-bot-api")
 const axios = require("axios")
+const config = require('./botConfig') 
 
-const token:string = "6010251648:AAGMmNN6WO3uswC9nUyNIXUX6nmXjjytZEw"
+const token:string = config.token
 const bot:any = new TelegramApi(token, { polling: true })
+
 let now = Date.now();
 
 interface IMsg {
@@ -91,13 +93,7 @@ exports.initBot = function () {
 
 		return bot.sendMessage(chatId, 'Я тебя не понял')
 	})
-
-	setInterval(() => {
-		if (Date.now() > now + 600000) {
-			bot.sendMessage(1226355897, 'прошело 10 минут')
-			now = Date.now();
-		}
-	}, 1000);
+	
 }
 
 exports.happyBirthday = function (chatId) {

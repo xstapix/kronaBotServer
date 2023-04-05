@@ -1,43 +1,33 @@
 const http = require('http');
-const url = require('url');
-const tgBot = require("./bot")
+const tgBot = require("./components/bot")
+
+const config = require('./config/serverConfig')
 
 const server = http.createServer((req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-  res.setHeader("Access-Control-Allow-Methods", "HEAD,OPTIONS,POST,PUT");
-  res.setHeader("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers", 'origin, content-type, accept, application/json');
+  res.setHeader("Access-Control-Allow-Origin", config.header.ACA_Origin);
+  res.setHeader("Access-Control-Allow-Credentials", config.header.ACA_Credentials);
+  res.setHeader("Access-Control-Allow-Methods", config.header.ACA_Methods);
+  res.setHeader("Access-Control-Allow-Headers", config.header.ACA_Methods);
+  res.setHeader("Content-Type", config.header.Content_Type)
+
+  let data;
   
-  if (req.url === '/api/name') {
-    data = JSON.stringify([
-      {
-        name: 'red'
-      },
-      {
-        name: 'gfgt'
-      }
-    ])
-  }
+  req.on("data", chunk => {
+    data += chunk;
+  });
 
-  console.log(req.data);
-
+  req.on("end", () => {
+    if (data) { 
+      let clearData = JSON.parse(data.replace('undefined', ''))
+      console.log(clearData);
+    }
+  });
   if (req.url === '/api/id') {
-    let data;
-
-    req.on("data", chunk => {
-      data += chunk;
-    });
-    req.on("end", () => {
-      if (data) { 
-        let clearData = JSON.parse(data.replace('undefined', ''))
-        console.log(clearData);
-      }
-    });
-
-    res.end()
+    res.end(JSON.stringify({status: 200}))
   }
 
 });
-server.listen(8000, 'localhost');
+
+server.listen(config.PORT, config.hostName);
 
 tgBot.initBot()
