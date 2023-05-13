@@ -1,13 +1,14 @@
 const express = require('express')
 const axios = require('axios');
 const multer = require("multer");
-const url = require('url');
 
 const tgBot = require("./components/bot/index.js")
 const config = require('./config/serverConfig.js')
 
 const app = express()
 const upload = multer({ dest: "uploads/" });
+
+const url = 'https://kronadev.ru/api_2/'
 
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", config.header.ACA_Origin);
@@ -34,7 +35,7 @@ app.post('/', (req, res) => {
         console.log('sendTextMessageBot');
         console.log(clearData);
         
-        const chat_id_list = await axios.get('https://6392fd90ab513e12c5ff47f0.mockapi.io/location')
+        const chat_id_list = await axios.get('https://6392fd90ab513e12c5ff47f0.mockapi.io/properties')
         console.log(chat_id_list.data);
 
         if (clearData.option === 'Всем') {
@@ -56,6 +57,36 @@ app.post('/', (req, res) => {
         }
       }
 
+      if (clearData.method === 'addStar') {
+        const answer = await axios.post(url, clearData)
+        console.log(clearData);
+      }
+
+      if (clearData.method === 'changeUserEmail') {
+        const answer = await axios.post(url, clearData)
+        console.log(clearData);
+      }
+
+      if (clearData.method === 'changeTg') {
+        const answer = await axios.post(url, clearData)
+        console.log(clearData);
+      }
+
+      if (clearData.method === 'addFreeMonth') {
+        const answer = await axios.post(url, clearData)
+        console.log(clearData);
+      }
+
+      if (clearData.method === 'unbanUser') {
+        const answer = await axios.post(url, clearData)
+        console.log(clearData);
+      }
+
+      if (clearData.method === 'banUser') {
+        const answer = await axios.post(url, clearData)
+        console.log(clearData);
+      }
+
       if (clearData.method === 'dateRangeMessage') {
         console.log(clearData);
       }     
@@ -68,29 +99,45 @@ app.post('/file', upload.array("file"), async (req, res) => {
   let bodydata = req.body;
 
   if (bodydata.method === 'sendTextAndImgMessageBot') {
-    console.log(bodydata.method);
-    console.log(filedata);
-    // const chat_id_list = await axios.get('https://6392fd90ab513e12c5ff47f0.mockapi.io/location')
+    const chat_id_list = await axios.get('https://6392fd90ab513e12c5ff47f0.mockapi.io/properties')
+    const formdata = new FormData()
     
-    let x = URL.createObjectURL(filedata[0])
+    if (filedata.length > 0) {
+      const paramsObj = {}
+      formdata.append('text', bodydata.text)
+      formdata.append('method', bodydata.method)
+      
+      for (let i = 0; i < filedata.length; i++) {
+        formdata.append('file', filedata[i])
+      }
 
-    console.log(x);
-    // const paramsObj = {
-    //   chat_id: 1226355897,
-    //   media: [
-    //     {
-    //       type: "photo",
-    //       media: url.fileURLToPath(filedata[0]),
-    //       caption: "clearData.text"
-    //     },
-    //     {
-    //       type: "photo",
-    //       media: 'https://i.natgeofe.com/n/548467d8-c5f1-4551-9f58-6817a8d2c45e/NationalGeographic_2572187_square.jpg'
-    //     }
-    //   ]
-    // }
+      const list_url = await axios.get('https://6392fd90ab513e12c5ff47f0.mockapi.io/location', formdata)
+      
+      list_url.data.map(obj => {
+        obj.type = "photo"
+      })
 
-    // await axios.post(`https://api.telegram.org/bot6010251648:AAGMmNN6WO3uswC9nUyNIXUX6nmXjjytZEw/sendMediaGroup`, paramsObj) 
+      if (bodydata.text !== 'null') {
+        list_url.data[0].caption = bodydata.text
+      }
+
+      paramsObj.media = list_url.data
+
+      chat_id_list.data.map(async(objChat) => {
+        if (objChat.active) { 
+          paramsObj.chat_id = objChat.chat_id
+          console.log(paramsObj);
+          await axios.post(`https://api.telegram.org/bot6010251648:AAGMmNN6WO3uswC9nUyNIXUX6nmXjjytZEw/sendMediaGroup`, paramsObj)
+        }
+      })
+    } else {
+      chat_id_list.data.map(async(objChat) => {
+        await axios.post(`https://api.telegram.org/bot6010251648:AAGMmNN6WO3uswC9nUyNIXUX6nmXjjytZEw/sendMessage`, {
+          chat_id: objChat.chat_id,
+          text: bodydata.text
+        })
+      })
+    }
   }
 })
 
