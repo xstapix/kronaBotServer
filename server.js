@@ -6,7 +6,18 @@ const tgBot = require("./components/bot/index.js")
 const config = require('./config/serverConfig.js')
 
 const app = express()
-const upload = multer({ dest: "uploads/" });
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    // '/files' это директория в которую будут сохранятся файлы 
+    cb(null, 'uploads/')
+  },
+  filename: (req, file, cb) => {
+// Возьмем оригинальное название файла, и под этим же названием сохраним его на сервере
+    const { originalname } = file
+    cb(null, originalname)
+  }
+})
+const upload = multer({ storage: storage });
 
 const url = 'https://kronadev.ru/api_2/'
 
@@ -89,6 +100,101 @@ app.post('/', (req, res) => {
 
       if (clearData.method === 'dateRangeMessage') {
         console.log(clearData);
+        const listWithDate = await axios.get('https://6392fd90ab513e12c5ff47f0.mockapi.io/peopleVSU')
+
+        let arrDate = clearData.date_start.split('.');
+        [arrDate[1], arrDate[0]] = [arrDate[0], arrDate[1]]
+        
+        let currectDate = arrDate.join('.')
+        clearData.date_start = new Date(currectDate)
+
+        arrDate = clearData.date_end.split('.');
+        [arrDate[1], arrDate[0]] = [arrDate[0], arrDate[1]]
+        
+        currectDate = arrDate.join('.')
+        clearData.date_end = new Date(currectDate)
+
+        listWithDate.data.map(user => {
+          for (const key in user) {
+            if (user[key]) {
+              if (key === 'start') {
+                user[key].map((date, index) => {
+                  let arrDate = date.split('.');
+                  [arrDate[1], arrDate[0]] = [arrDate[0], arrDate[1]]
+                  
+                  let currectDate = arrDate.join('.')
+
+                  user[key][index] = new Date(currectDate)
+                })
+              }
+              if (key === 'end') {
+                user[key].map((date, index) => {
+                  let arrDate = date.split('.');
+                  [arrDate[1], arrDate[0]] = [arrDate[0], arrDate[1]]
+                  
+                  let currectDate = arrDate.join('.')
+                  
+                  user[key][index] = new Date(currectDate)
+                })
+              }
+            }
+          }
+        })
+
+        listWithDate.data.map(async(user) => {
+          console.log(user.chat_id);
+          if (user.start) {
+            if (clearData.option === 'Активным') {
+              let lastStart = new Date(user.start.pop())
+              let lastEnd = new Date(user.end.pop())
+              let passStart = false
+              let passEnd = false
+              
+              if ((lastStart.getTime() <= clearData.date_start.getTime()) && (clearData.date_start.getTime() <= lastEnd.getTime())) {
+                console.log('pass stgart:', lastStart);
+                passStart = true
+              }
+
+              if ((lastStart.getTime() <= clearData.date_end.getTime()) && (clearData.date_end.getTime() <= lastEnd.getTime())) {
+                console.log('pass end:', lastEnd);
+                passEnd = true
+              }
+
+              if (passEnd || passStart) {
+                console.log('success');
+                await axios.post(`https://api.telegram.org/bot6010251648:AAGMmNN6WO3uswC9nUyNIXUX6nmXjjytZEw/sendMessage`, {
+                  chat_id: user.chat_id,
+                  text: clearData.text
+                })
+              }
+            }
+
+            if (clearData.option === 'Не активным') {
+              let passStart = false
+              let passEnd = false
+
+              user.start.map((date, index) => {
+                if ((date.getTime() <= clearData.date_start.getTime()) && (clearData.date_start.getTime() <= user.end[index].getTime())) {
+                  console.log(index, 'pass stgart:', date);
+                  passStart = true
+                }
+  
+                if ((date.getTime() <= clearData.date_end.getTime()) && (clearData.date_end.getTime() <= user.end[index].getTime())) {
+                  console.log(index, 'pass end:', user.end[index]);
+                passEnd = true
+                }
+              })
+
+              if (passEnd || passStart) {
+                console.log('success');
+                await axios.post(`https://api.telegram.org/bot6010251648:AAGMmNN6WO3uswC9nUyNIXUX6nmXjjytZEw/sendMessage`, {
+                  chat_id: user.chat_id,
+                  text: clearData.text
+                })
+              }
+            }
+          }
+        })
       }     
     }
   })
@@ -100,33 +206,29 @@ app.post('/file', upload.array("file"), async (req, res) => {
 
   if (bodydata.method === 'sendTextAndImgMessageBot') {
     const chat_id_list = await axios.get('https://6392fd90ab513e12c5ff47f0.mockapi.io/properties')
-    const formdata = new FormData()
-    
+    console.log(filedata);
     if (filedata.length > 0) {
-      const paramsObj = {}
-      formdata.append('text', bodydata.text)
-      formdata.append('method', bodydata.method)
-      
-      for (let i = 0; i < filedata.length; i++) {
-        formdata.append('file', filedata[i])
+      const paramsObj = { 
+        media: []
       }
 
-      const list_url = await axios.get('https://6392fd90ab513e12c5ff47f0.mockapi.io/location', formdata)
-      
-      list_url.data.map(obj => {
-        obj.type = "photo"
+      filedata.map((obj, index) => {
+        paramsObj.media.push({
+          type: 'photo',
+          media: `file:///C:/projects/tg%20bot/uploads/${obj.originalname}`
+        })
+        // paramsObj.media[index].type = "photo"
       })
 
       if (bodydata.text !== 'null') {
-        list_url.data[0].caption = bodydata.text
+        paramsObj.media[0].caption = bodydata.text
       }
 
-      paramsObj.media = list_url.data
+      console.log(paramsObj);
 
       chat_id_list.data.map(async(objChat) => {
         if (objChat.active) { 
           paramsObj.chat_id = objChat.chat_id
-          console.log(paramsObj);
           await axios.post(`https://api.telegram.org/bot6010251648:AAGMmNN6WO3uswC9nUyNIXUX6nmXjjytZEw/sendMediaGroup`, paramsObj)
         }
       })
