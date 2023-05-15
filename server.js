@@ -217,7 +217,6 @@ app.post('/file', upload.array("file"), async (req, res) => {
           type: 'photo',
           media: `file:///C:/projects/tg%20bot/uploads/${obj.originalname}`
         })
-        // paramsObj.media[index].type = "photo"
       })
 
       if (bodydata.text !== 'null') {
